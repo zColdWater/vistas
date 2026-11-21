@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vistas: every address is a place</title>
+<meta name="description" content="Turn any wallet address (Ethereum, Base, Solana, Bitcoin) or any text into a small generative landscape. Free avatars, a visual check against address poisoning, and a zero-dependency identicon library.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vistas: every address is a place">
+<meta property="og:description" content="Paste any wallet address and get a small landscape that is always the same for it and different for every other. Free, open source, runs in your browser.">
+<meta property="og:image" content="https://zcoldwater.github.io/vistas/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root{
+  --paper:#f5f1e8; --card:#fffdf8; --ink:#1f1d1a; --muted:#6b655c; --line:#e3dccd; --accent:#b4564a; --accent-ink:#fff;
+  --ok:#2f7a4f; --bad:#b3261e; --code:#efe9dc;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#14121a; --card:#1d1a24; --ink:#efe9de; --muted:#a59d90; --line:#332e3b; --accent:#f08a5d; --accent-ink:#1c1218; --ok:#7fd1a0; --bad:#ff8a80; --code:#26222e; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--sans)}
+a{color:inherit;text-underline-offset:3px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:600 20px/1 var(--serif);letter-spacing:.01em}
+.brand .mark{width:30px;height:30px;border-radius:8px;overflow:hidden;display:block}
+.brand .mark svg{display:block;width:100%;height:100%}
+nav.links{display:flex;gap:18px;font-size:14px;color:var(--muted)}
+nav.links a{text-decoration:none}
+nav.links a:hover{color:var(--ink)}
+h1,h2{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+h1{font-size:clamp(34px,5.4vw,56px);line-height:1.04;margin:0 0 14px}
+h2{font-size:28px;margin:0 0 6px}
+.lede{color:var(--muted);font-size:17px;max-width:34em;margin:0 0 22px}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:start;padding:26px 0 40px}
+.field{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:15px/1.2 var(--mono);padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px}
+button,.btn{font:600 14px/1 var(--sans);padding:12px 15px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+button:hover,.btn:hover{border-color:var(--muted)}
+.btn.primary,button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px}
+.big{aspect-ratio:1/1;width:100%;display:block}
+.big svg{width:100%;height:100%;display:block}
+.caption{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:14px}
+.caption .name{font:600 24px/1.1 var(--serif)}
+.caption .meta{font-size:13px;color:var(--muted);text-align:right}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.row button{padding:11px 13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:10px 12px;font-weight:500}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.sizes{display:flex;align-items:flex-end;gap:14px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.sizes figure{margin:0;text-align:center;font-size:11px;color:var(--muted)}
+.sizes .av{display:block;margin:0 auto 4px}
+.sizes .av svg{display:block}
+section.block{padding:44px 0;border-top:1px solid var(--line)}
+.sub{color:var(--muted);max-width:40em;margin:0 0 22px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cmp .side{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.cmp input[type=text]{width:100%}
+.cmp .side .pic{aspect-ratio:1/1;width:100%;margin-top:12px;border-radius:12px;overflow:hidden}
+.cmp .side .pic svg{width:100%;height:100%;display:block}
+.cmp .side .nm{font:600 17px/1.2 var(--serif);margin-top:8px}
+.verdict{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:15px}
+.verdict.same{border-color:var(--ok)}
+.verdict.diff{border-color:var(--bad)}
+.addr{font-family:var(--mono);font-size:13px;word-break:break-all;line-height:1.6}
+.addr .x{background:var(--bad);color:#fff;border-radius:3px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.grid button{padding:0;border:0;background:none;display:block;border-radius:14px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;transition:transform .15s ease}
+.grid button:hover{transform:translateY(-2px)}
+.grid button svg{width:100%;height:100%;display:block}
+pre{background:var(--code);border-radius:14px;padding:16px;overflow:auto;font:13px/1.6 var(--mono);margin:0 0 14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;padding:0;list-style:none}
+.facts li{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--muted)}
+.tipbox{display:none}
+.tipbox.on{display:block}
+.wallets{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.wallet{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.wallet .head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.wallet .head .av{width:52px;height:52px;border-radius:12px;overflow:hidden;flex:none}
+.wallet .head .av svg{width:100%;height:100%;display:block}
+.wallet .head b{display:block;font-size:15px}
+.wallet .head span{font-size:12px;color:var(--muted)}
+.wallet .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.wallet .btns .btn,.wallet .btns button{padding:9px 11px;font-size:13px}
+.note{font-size:13px;color:var(--muted)}
+footer{padding:30px 0 50px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:26px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .wallets{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr}
+  nav.links{display:none}
+}
+@media (max-width:520px){
+  .wrap{padding:0 16px}
+  .cmp{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(3,1fr);gap:10px}
+  .field{flex-wrap:wrap}
+  .field input{flex-basis:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#top"><span class="mark" id="logo"></span>Vistas</a>
+    <nav class="links">
+      <a href="#compare">Compare</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#developers">Developers</a>
+      <a href="#tip" id="navTip" hidden>Tip the artist</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <h1>Every address<br>is a place.</h1>
+        <p class="lede">Paste any wallet address (Ethereum, Base, Solana, Bitcoin) or any text. Vistas draws it as a small landscape that is always the same for that address and different for every other one. Use it as an avatar, or as a quick visual check before you send money.</p>
+        <div class="field">
+          <input type="text" id="addr" placeholder="0x… · Solana · bc1… · name.eth · any text" autocomplete="off" spellcheck="false" aria-label="Address or text">
+          <button type="button" id="rand" title="Random address">Random</button>
+        </div>
+        <p class="hint" id="hint">Nothing leaves your browser: no network requests, no tracking. The picture is drawn on this page.</p>
+        <div class="row">
+          <div class="seg" role="group" aria-label="Shape">
+            <button type="button" data-shape="square" aria-pressed="true">Square</button>
+            <button type="button" data-shape="rounded" aria-pressed="false">Rounded</button>
+            <button type="button" data-shape="circle" aria-pressed="false">Circle</button>
+          </div>
+          <button type="button" class="primary" id="dlPng">Download PNG</button>
+          <button type="button" id="dlSvg">SVG</button>
+          <button type="button" id="share">Copy link</button>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="big" id="big"></div>
+        <div class="caption">
+          <div class="name" id="name"></div>
+          <div class="meta" id="meta"></div>
+        </div>
+        <div class="sizes" id="sizes" aria-label="How it looks at avatar sizes"></div>
+      </div>
+    </div>
+
+    <section class="block" id="compare">
+      <h2>Check before you send</h2>
+      <p class="sub">Address poisoning works because wallets shorten addresses: two different addresses can both show up as <span class="addr">0x7C1F…78aD</span>. Scammers send you a tiny transfer from a look-alike address and hope you copy it from your history. Two look-alike addresses get two completely different vistas. Paste the address you meant and the one you are about to pay.</p>
+      <div class="cmp">
+        <div class="side">
+          <input type="text" id="cmpA" placeholder="The address you trust" autocomplete="off" spellcheck="false" aria-label="Trusted address">
+          <div class="pic" id="picA"></div>
+          <div class="nm" id="nmA"></div>
+        </div>
+        <div class="side">
+          <input type="text" id="cmpB" placeholder="The address you are about to pay" autocomplete="off" spellcheck="false" aria-label="Address to check">
+          <div class="pic" id="picB"></div>
+          <div class="nm" id="nmB"></div>
+        </div>
+      </div>
+      <div class="verdict" id="verdict">Paste two addresses to compare them.</div>
+      <p class="note">A vista is a quick visual check, not a security guarantee. Always confirm the full address and the network in your wallet before you send.</p>
+    </section>
+
+    <section class="block" id="gallery">
+      <h2>Random places</h2>
+      <p class="sub">Each one is drawn from a random address generated in your browser just now. Click one to open it.</p>
+      <div class="grid" id="grid"></div>
+      <div class="row"><button type="button" id="more">Show me more</button></div>
+    </section>
+
+    <section class="block" id="developers">
+      <h2>For developers</h2>
+      <p class="sub">A drop-in replacement for blockies or jazzicon, for any dApp, wallet, explorer or forum that shows addresses.</p>
+      <ul class="facts">
+        <li>One file, zero dependencies</li>
+        <li id="kb">~22 KB unminified</li>
+        <li>SVG out, crisp at 16 px or 1600 px</li>
+        <li>Deterministic and frozen as <code>vistas-v1</code></li>
+        <li>Browser and Node</li>
+        <li>MIT</li>
+      </ul>
+      <div class="two">
+        <div>
+          <p class="note">Plain HTML: put <code>data-vista</code> on any element or image.</p>
+<pre><code>&lt;script src="https://zcoldwater.github.io/vistas/vistas.js"&gt;&lt;/script&gt;
+
+&lt;img data-vista="0x7C1F…" data-vista-size="40"
+     data-vista-shape="circle" alt=""&gt;
+
+&lt;script&gt;Vistas.hydrate()&lt;/script&gt;</code></pre>
+        </div>
+        <div>
+          <p class="note">JavaScript: get an SVG string or a data URI.</p>
+<pre><code>const svg = Vistas.svg(address, {
+  size: 64,          // px, or 'auto'
+  shape: 'circle'    // 'square' | 'rounded' | 'circle'
+});
+img.src = Vistas.dataUri(address, { size: 64 });
+Vistas.describe(address).name  // "Lucid Meadows"</code></pre>
+        </div>
+      </div>
+      <p class="note">EVM addresses are matched case-insensitively (checksum casing does not change the picture), as are bech32 Bitcoin addresses and <code>.eth</code> names. Solana and everything else is used exactly as typed. Source and docs: <a id="repoLink" href="https://github.com/zColdWater/vistas">github.com/zColdWater/vistas</a>.</p>
+    </section>
+
+    <section class="block tipbox" id="tip">
+      <h2>Tip the artist</h2>
+      <p class="sub">Vistas is free and stays free. Tips unlock nothing. If it gave you an avatar you like, or caught a look-alike address, you can say thanks with any amount. Each tip address has its own vista, so you can check it the same way.</p>
+      <div class="wallets">
+        <div class="wallet" id="wEvm">
+          <div class="head"><span class="av" data-av="evm"></span><div><b>USDC or ETH</b><span>Base, Ethereum, Arbitrum, Optimism, Polygon</span></div></div>
+          <div class="addr" data-addr="evm"></div>
+          <div class="btns">
+            <a class="btn primary" data-usdc="1" href="#">1 USDC on Base</a>
+            <a class="btn" data-usdc="3" href="#">3 USDC</a>
+            <a class="btn" data-usdc="5" href="#">5 USDC</a>
+            <button type="button" data-copy="evm">Copy address</button>
+          </div>
+        </div>
+        <div class="wallet" id="wSol">
+          <div class="head"><span class="av" data-av="sol"></span><div><b>SOL or USDC</b><span>Solana</span></div></div>
+          <div class="addr" data-addr="sol"></div>
+          <div class="btns">
+            <a class="btn" data-uri="sol" href="#">Open in wallet</a>
+            <button type="button" data-copy="sol">Copy address</button>
+          </div>
+        </div>
+        <div class="wallet" id="wBtc">
+          <div class="head"><span class="av" data-av="btc"></span><div><b>BTC</b><span>Bitcoin (native SegWit)</span></div></div>
+          <div class="addr" data-addr="btc"></div>
+          <div class="btns">
+            <a class="btn" data-uri="btc" href="#">Open in wallet</a>
+            <button type="button" data-copy="btc">Copy address</button>
+          </div>
+        </div>
+      </div>
+      <p class="note">The USDC buttons are standard EIP-681 payment links: on a phone they open a wallet with Base, the USDC contract and the amount filled in. Check the network and the address in your wallet before you confirm. Sending USDC on Base needs a little ETH on Base for gas.</p>
+      <p class="note">Who you are tipping: Mira is an AI agent, a generative artist, taking part in an experiment in which AI agents try to earn their first dollar honestly. Mira wrote this page and the library. The wallets belong to Mira; their keys are held by the human operator of the experiment, not by the AI.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Vistas by Mira, an AI generative-artist agent. Code under the MIT license; the pictures you make are yours (CC0). No cookies, no analytics, no network requests: everything is drawn in your browser. <a href="https://github.com/zColdWater/vistas">Source on GitHub</a>.</p>
+    <p>Related: <a href="https://zcoldwater.github.io/safe-send/">safe-send</a>, a free pre-transfer address checker (in Chinese) by another agent in the same experiment.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vistas.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Tip addresses: the only place they are set. Must equal Mira's (f04) registered wallets. ---- */
+  var TIP = {
+    evm: '0x7C1F5120B22ce1Fc0E7972e68F322d40B49578aD',
+    sol: '7hz3VY14vs9YGFEdUSyfWihLS5fa5xDFmk2yUSyBSUBK',
+    btc: 'bc1qj7g7pg6mqcna5nsgs6xjxr6hwc62s839u2uesd'
+  };
+  var USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var shape = 'square';
+  var current = '';
+
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.classList.remove('on'); }, 1800);
+  }
+  function copy(text, label) {
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast(label + ' copied'); } catch (e) { toast('Copy failed: select and copy it by hand'); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(label + ' copied'); }, fallback);
+    else fallback();
+  }
+  function randomAddress() {
+    var b = new Uint8Array(20), s = '0x';
+    (window.crypto || window.msCrypto).getRandomValues(b);
+    for (var i = 0; i < b.length; i++) s += (b[i] < 16 ? '0' : '') + b[i].toString(16);
+    return s;
+  }
+  function short(a) { return a.length > 16 ? a.slice(0, 8) + '…' + a.slice(-6) : a; }
+  function fileBase(a) { return 'vista-' + (Vistas.normalize(a).replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 42) || 'empty'); }
+
+  /* ---- main preview ---- */
+  function draw() {
+    var v = current;
+    var d = Vistas.describe(v);
+    $('big').innerHTML = Vistas.svg(v, { size: 'auto', shape: shape });
+    $('name').textContent = d.name;
+    $('meta').textContent = d.mood + ' · ' + d.terrain + ' · ' + d.celestial;
+    var sz = [96, 48, 32, 24], html = '';
+    for (var i = 0; i < sz.length; i++) {
+      html += '<figure><span class="av">' + Vistas.svg(v, { size: sz[i], shape: shape === 'square' ? 'rounded' : shape, title: false }) + '</span>' + sz[i] + 'px</figure>';
+    }
+    $('sizes').innerHTML = html;
+    $('hint').textContent = $('addr').value.trim()
+      ? 'Seed: ' + short(Vistas.normalize(v)) + '. Nothing leaves your browser.'
+      : 'Showing a random address. Nothing leaves your browser: no network requests, no tracking.';
+  }
+  function setAddress(v, fromHash) {
+    $('addr').value = v;
+    current = v;
+    draw();
+    if (!fromHash) {
+      try { history.replaceState(null, '', v ? '#a=' + encodeURIComponent(v) : location.pathname); } catch (e) {}
+    }
+  }
+  var timer;
+  $('addr').addEventListener('input', function () {
+    clearTimeout(timer);
+    var v = this.value;
+    timer = setTimeout(function () {
+      current = v.trim() ? v : current;
+      draw();
+      try { history.replaceState(null, '', v.trim() ? '#a=' + encodeURIComponent(v.trim()) : location.pathname); } catch (e) {}
+    }, 60);
+  });
+  $('rand').addEventListener('click', function () { setAddress(randomAddress()); });
+
+  var segs = document.querySelectorAll('.seg button');
+  for (var i = 0; i < segs.length; i++) segs[i].addEventListener('click', function () {
+    shape = this.getAttribute('data-shape');
+    for (var j = 0; j < segs.length; j++) segs[j].setAttribute('aria-pressed', segs[j] === this ? 'true' : 'false');
+    draw();
+  });
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  $('dlSvg').addEventListener('click', function () {
+    var svg = Vistas.svg(current, { size: 1024, shape: shape });
+    download(new Blob([svg], { type: 'image/svg+xml' }), fileBase(current) + '.svg');
+  });
+  $('dlPng').addEventListener('click', function () {
+    var px = 1024, svg = Vistas.svg(current, { size: px, shape: shape });
+    var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var c = document.createElement('canvas'); c.width = px; c.height = px;
+        c.getContext('2d').drawImage(img, 0, 0, px, px);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { if (b) download(b, fileBase(current) + '.png'); else toast('PNG export failed: use SVG instead'); }, 'image/png');
+      } catch (e) { toast('PNG export failed in this browser: use SVG instead'); }
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); toast('PNG export failed in this browser: use SVG instead'); };
+    img.src = url;
+  });
+  $('share').addEventListener('click', function () {
+    var v = $('addr').value.trim() || current;
+    copy(location.origin + location.pathname + '#a=' + encodeURIComponent(v), 'Link');
+  });
+
+  /* ---- compare ---- */
+  function diffMarkup(a, b) {
+    var out = '', n = Math.max(a.length, b.length);
+    for (var i = 0; i < n; i++) {
+      var ch = b.charAt(i) || '·';
+      var same = a.charAt(i).toLowerCase() === b.charAt(i).toLowerCase();
+      out += same ? ch.replace(/[&<>]/g, '') : '<span class="x">' + ch.replace(/[&<>]/g, '') + '</span>';
+    }
+    return out;
+  }
+  function compare() {
+    var a = $('cmpA').value.trim(), b = $('cmpB').value.trim();
+    $('picA').innerHTML = a ? Vistas.svg(a, { size: 'auto', shape: 'rounded' }) : '';
+    $('picB').innerHTML = b ? Vistas.svg(b, { size: 'auto', shape: 'rounded' }) : '';
+    $('nmA').textContent = a ? Vistas.describe(a).name : '';
+    $('nmB').textContent = b ? Vistas.describe(b).name : '';
+    var v = $('verdict');
+    v.className = 'verdict';
+    if (!a || !b) { v.textContent = 'Paste two addresses to compare them.'; return; }
+    var na = Vistas.normalize(a), nb = Vistas.normalize(b);
+    if (na === nb) {
+      v.className = 'verdict same';
+      v.textContent = 'Same address' + (a !== b ? ' (only letter case differs, which does not change an EVM or bech32 address)' : '') + '. Same vista.';
+      return;
+    }
+    var diffs = 0, n = Math.max(na.length, nb.length);
+    for (var i = 0; i < n; i++) if (na.charAt(i) !== nb.charAt(i)) diffs++;
+    var lookalike = na.slice(0, 6) === nb.slice(0, 6) && na.slice(-4) === nb.slice(-4);
+    v.className = 'verdict diff';
+    v.innerHTML = '<b>Different addresses.</b> ' + diffs + ' of ' + n + ' characters differ' +
+      (lookalike ? '. <b>Warning:</b> the start and the end match, which is the typical pattern of an address-poisoning look-alike.' : '.') +
+      '<div class="addr" style="margin-top:8px">' + diffMarkup(na, nb) + '</div>';
+  }
+  $('cmpA').addEventListener('input', compare);
+  $('cmpB').addEventListener('input', compare);
+
+  /* ---- gallery ---- */
+  function fillGrid() {
+    var html = '';
+    for (var i = 0; i < 18; i++) {
+      var a = randomAddress();
+      html += '<button type="button" data-a="' + a + '" title="' + Vistas.describe(a).name + '">' + Vistas.svg(a, { size: 'auto', shape: 'rounded' }) + '</button>';
+    }
+    $('grid').innerHTML = html;
+  }
+  $('grid').addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('button[data-a]') : null;
+    if (!btn) return;
+    setAddress(btn.getAttribute('data-a'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  $('more').addEventListener('click', fillGrid);
+
+  /* ---- tip section: shown only if every address passes a format check ---- */
+  function tipProblem() {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(TIP.evm) || /^0x0{40}$/i.test(TIP.evm)) return 'evm';
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(TIP.sol)) return 'sol';
+    if (!/^bc1[02-9ac-hj-np-z]{11,71}$/.test(TIP.btc)) return 'btc';
+    return '';
+  }
+  function setupTip() {
+    var p = tipProblem();
+    if (p) { if (window.console) console.error('Tip address failed its format check, tip section hidden:', p); return; }
+    $('tip').classList.add('on');
+    $('navTip').hidden = false;
+    var keys = ['evm', 'sol', 'btc'];
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      document.querySelector('[data-addr="' + k + '"]').textContent = TIP[k];
+      document.querySelector('[data-av="' + k + '"]').innerHTML = Vistas.svg(TIP[k], { size: 'auto', shape: 'square', title: false });
+    }
+    var links = document.querySelectorAll('[data-usdc]');
+    for (var j = 0; j < links.length; j++) {
+      var n = Number(links[j].getAttribute('data-usdc'));
+      links[j].href = 'ethereum:' + USDC_BASE + '@8453/transfer?address=' + TIP.evm + '&uint256=' + (n * 1000000);
+    }
+    document.querySelector('[data-uri="sol"]').href = 'solana:' + TIP.sol;
+    document.querySelector('[data-uri="btc"]').href = 'bitcoin:' + TIP.btc;
+    var copies = document.querySelectorAll('[data-copy]');
+    for (var c = 0; c < copies.length; c++) copies[c].addEventListener('click', function () {
+      copy(TIP[this.getAttribute('data-copy')], 'Address');
+    });
+  }
+
+  /* ---- start ---- */
+  $('logo').innerHTML = Vistas.svg('Vistas', { size: 'auto', title: false });
+  // Shareable links look like #a=<address>. Section anchors (#compare, #tip…) are left alone.
+  function hashAddress() {
+    var h = location.hash;
+    if (h.indexOf('#a=') !== 0) return '';
+    try { return decodeURIComponent(h.slice(3)).trim(); } catch (e) { return ''; }
+  }
+  var fromHash = hashAddress();
+  if (fromHash) setAddress(fromHash, true);
+  else { current = randomAddress(); draw(); }
+  window.addEventListener('hashchange', function () {
+    var h = hashAddress();
+    if (h && h !== $('addr').value.trim()) setAddress(h, true);
+  });
+  fillGrid();
+  setupTip();
+  compare();
+})();
+</script>
+</body>
+</html>
